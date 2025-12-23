@@ -380,7 +380,7 @@
             <span class="icon-label">Ver Menú</span>
           </a>
           <!-- Link a Maps -->
-          <a href="https://maps.app.goo.gl/HXKmJiUPqy2UYkPKA" class="action-icon-item" target="_blank">
+          <a href="INSERTAR_URL_MAPS_AQUI" class="action-icon-item" target="_blank">
             <div class="icon-circle"><i class="fas fa-map-marker-alt"></i></div>
             <span class="icon-label">Cómo Llegar</span>
           </a>
@@ -518,15 +518,66 @@
       e.target.value = val;
     });
 
+    // --- CALENDARIO CON RANGO ESTRICTO Y ZONA LOCAL ---
     function initCalendar() {
-      const today = new Date().toISOString().split('T')[0];
+      // 1. Obtener fecha local exacta (sin conversión UTC que reste días)
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      const today = `${year}-${month}-${day}`;
+
+      // 2. Calcular fecha máxima (3 meses)
+      const maxDateObj = new Date(now);
+      maxDateObj.setMonth(maxDateObj.getMonth() + 3);
+      const maxYear = maxDateObj.getFullYear();
+      const maxMonth = String(maxDateObj.getMonth() + 1).padStart(2, '0');
+      const maxDay = String(maxDateObj.getDate()).padStart(2, '0');
+      const maxDate = `${maxYear}-${maxMonth}-${maxDay}`;
+
       const dateInput = document.getElementById('input-date');
       dateInput.setAttribute('min', today);
-      dateInput.value = today; 
-      appState.date = today;
+      dateInput.setAttribute('max', maxDate);
+      
+      // Si el input está vacío o tiene una fecha pasada, poner HOY
+      if (!dateInput.value || dateInput.value < today) {
+         dateInput.value = today;
+         appState.date = today;
+      } else {
+         appState.date = dateInput.value;
+      }
+      
       document.getElementById('btn-search').disabled = false;
     }
     initCalendar();
+
+    // --- VALIDACIÓN AL CAMBIAR FECHA ---
+    function validateDate() { 
+      const input = document.getElementById('input-date');
+      const v = input.value;
+      const min = input.getAttribute('min');
+      const max = input.getAttribute('max');
+      
+      if (!v) {
+        document.getElementById('btn-search').disabled = true;
+        return;
+      }
+
+      // Validación por si el navegador móvil permite saltarse el min/max UI
+      if (v < min) {
+        alert("No se pueden seleccionar fechas pasadas.");
+        input.value = min;
+        appState.date = min;
+      } else if (v > max) {
+        alert("Las reservas se permiten hasta 3 meses de antelación.");
+        input.value = max;
+        appState.date = max;
+      } else {
+        appState.date = v; 
+      }
+      
+      document.getElementById('btn-search').disabled = false; 
+    }
 
     function goToStep(stepNumber) {
       if (stepNumber === 5) {
@@ -559,8 +610,6 @@
 
     // --- LÓGICA DE NEGOCIO ---
     function updatePax(d) { let n = appState.pax + d; if(n>=1 && n<=12) { appState.pax = n; document.getElementById('pax-value').innerText = n; } }
-    
-    function validateDate() { const v = document.getElementById('input-date').value; appState.date = v; document.getElementById('btn-search').disabled = !v; }
     
     function searchHours() {
       showLoader('Buscando...');

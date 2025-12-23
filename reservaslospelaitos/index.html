@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Concierge de Reservas | Palo de Mango</title>
+  
+  <!-- FUENTES DE LUJO -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  
+  <!-- ICONOS -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
+  <style>
+    /* --- SISTEMA DE DISEÑO --- */
+    :root {
+      --gold: #D4AF37;          
+      --black: #0a0a0a;         
+      --charcoal: #1f1f1f;      
+      --white: #ffffff;
+      --glass: rgba(255, 255, 255, 0.98);
+      --radius: 8px;
+      --shadow-hard: 0 10px 40px rgba(0,0,0,0.12);
+      
+      --font-display: 'Cormorant Garamond', serif;
+      --font-body: 'Montserrat', sans-serif;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; -webkit-tap-highlight-color: transparent; }
+    
+    body {
+      font-family: var(--font-body);
+      background-color: #e6e6e6;
+      background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      color: var(--black);
+      padding: 15px;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 450px;
+      background: var(--glass);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-hard);
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.5);
+    }
+
+    /* HEADER */
+    header { text-align: center; padding: 25px 20px 10px 20px; }
+    h1.brand {
+      font-family: var(--font-display); font-size: 2.2rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--black); line-height: 1; margin-bottom: 5px;
+    }
+    .subtitle { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.25em; color: var(--gold); font-weight: 600; }
+
+    /* BARRA DE RESUMEN (PERSISTENTE) */
+    .summary-bar {
+      background: #fcfcfc;
+      border-bottom: 1px solid #eee;
+      border-top: 1px solid #eee;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--charcoal);
+      font-weight: 500;
+      letter-spacing: 1px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      min-height: 40px;
+      align-items: center;
+      pointer-events: none; /* Evita interacción cuando está oculta */
+    }
+    .summary-bar.visible { opacity: 1; pointer-events: all; }
+    .summary-item { display: flex; align-items: center; gap: 6px; }
+    .summary-item i { color: var(--gold); font-size: 0.8rem; }
+
+    /* WIZARD */
+    .wizard-content { padding: 10px 25px 40px 25px; min-height: 480px; position: relative; }
+    .step { display: none; animation: fadeSlideUp 0.5s ease-out forwards; }
+    .step.active { display: block; }
+    @keyframes fadeSlideUp { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+    h2.step-title {
+      font-family: var(--font-display); font-size: 1.6rem; color: var(--charcoal); text-align: center; margin-bottom: 25px; font-weight: 400; font-style: italic;
+    }
+
+    /* INPUTS & CONTROLES */
+    .input-group { position: relative; margin-bottom: 20px; }
+    .input-minimal, select.input-minimal, textarea.input-minimal {
+      width: 100%; padding: 14px 5px; border: none; border-bottom: 1px solid #ccc; background: transparent; font-family: var(--font-body); font-size: 1rem; color: var(--black); border-radius: 0; transition: border-color 0.3s;
+    }
+    .input-minimal:focus { border-bottom-color: var(--gold); }
+    .input-minimal::placeholder { color: #aaa; font-weight: 300; }
+    input[type="date"] { text-transform: uppercase; letter-spacing: 1px; color: #333; cursor: pointer; -webkit-appearance: none; min-height: 44px; }
+    
+    .phone-group { display: flex; gap: 10px; }
+    .country-input { width: 65px; border: none; border-bottom: 1px solid #ccc; background: transparent; font-family: var(--font-body); font-size: 1rem; color: var(--black); padding: 14px 0; text-align: center; }
+    .country-input:focus { border-bottom-color: var(--gold); }
+
+    /* IPHONE PICKER */
+    .ios-picker-wrapper { margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee; }
+    .picker-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+    .picker-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; color: #888; }
+    
+    .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+    .slider:before { position: absolute; content: ""; height: 20px; width: 20px; left: 2px; bottom: 2px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--gold); }
+    input:checked + .slider:before { transform: translateX(20px); }
+
+    .picker-wheel-container { display: none; position: relative; height: 150px; width: 100%; overflow: hidden; background: #fcfcfc; border-radius: 8px; -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%); mask-image: linear-gradient(to bottom, transparent 0%, black 30%, black 70%, transparent 100%); margin-top: 10px; }
+    .picker-wheel-container.open { display: flex; }
+    .picker-highlight { position: absolute; top: 50%; left: 0; width: 100%; height: 40px; background: rgba(212, 175, 55, 0.1); border-top: 1px solid rgba(212, 175, 55, 0.3); border-bottom: 1px solid rgba(212, 175, 55, 0.3); transform: translateY(-50%); pointer-events: none; z-index: 10; }
+    .picker-col { flex: 1; height: 100%; overflow-y: scroll; scroll-snap-type: y mandatory; scrollbar-width: none; -ms-overflow-style: none; }
+    .picker-col::-webkit-scrollbar { display: none; }
+    .picker-item { height: 40px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; color: #aaa; scroll-snap-align: center; }
+    .picker-pad { height: 55px; }
+
+    /* TIME GRID */
+    .time-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-height: 280px; overflow-y: auto; padding: 5px; -webkit-overflow-scrolling: touch; }
+    .time-slot { padding: 14px 0; text-align: center; border: 1px solid #e0e0e0; background: #fff; color: #555; font-size: 0.95rem; cursor: pointer; transition: all 0.2s ease; border-radius: 4px; }
+    .time-slot:hover { border-color: var(--gold); color: var(--gold); }
+    .time-slot.selected { background: var(--black); color: var(--gold); border-color: var(--black); }
+
+    /* CONSENTIMIENTO */
+    .consent-container { display: flex; gap: 12px; align-items: flex-start; margin: 20px 0; padding: 10px; background: rgba(255,255,255,0.5); border-radius: 4px; }
+    .consent-checkbox { margin-top: 3px; width: 18px; height: 18px; accent-color: var(--gold); }
+    .consent-text { font-size: 0.75rem; color: #555; line-height: 1.4; }
+
+    /* ÉXITO & ICONOS */
+    .success-info-block { 
+      background: #fdfdfd; 
+      border: 1px solid #eee; 
+      border-left: 3px solid var(--gold); 
+      padding: 15px; 
+      margin: 20px 0; 
+      text-align: center; /* CENTRADO SOLICITADO */
+      border-radius: 4px; 
+    }
+    .info-title { font-size: 0.8rem; text-transform: uppercase; color: var(--black); font-weight: 600; margin-bottom: 8px; display: block; }
+    .info-text { font-size: 0.85rem; color: #666; line-height: 1.5; margin-bottom: 8px; }
+    .whatsapp-link { color: var(--gold); font-weight: 600; text-decoration: none; border-bottom: 1px solid transparent; transition: 0.3s; }
+    .whatsapp-link:hover { border-bottom-color: var(--gold); }
+
+    .action-icons-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin: 25px 0; border-top: 1px solid #eee; padding-top: 25px; }
+    .action-icon-item { display: flex; flex-direction: column; align-items: center; text-decoration: none; color: var(--black); cursor: pointer; }
+    .icon-circle { width: 48px; height: 48px; border-radius: 50%; background: #f4f4f4; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; color: var(--gold); font-size: 1.1rem; transition: all 0.2s ease; }
+    .action-icon-item:hover .icon-circle { background: var(--black); color: var(--gold); transform: translateY(-2px); }
+    .icon-label { font-size: 0.65rem; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+
+    /* BOTONES */
+    .nav-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+    .nav-actions.center { justify-content: center; }
+    .nav-actions.column { flex-direction: column; gap: 15px; margin-top: 25px; }
+    .btn-link { background: none; border: none; color: #999; font-family: var(--font-body); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; padding: 12px; font-weight: 600; }
+    .btn-gold { background: var(--black); color: var(--white); border: none; padding: 16px 30px; font-family: var(--font-body); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; font-weight: 600; min-width: 140px; border-radius: 4px; }
+    .btn-gold:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-outline { background: transparent; border: 1px solid var(--black); color: var(--black); padding: 14px 40px; font-family: var(--font-body); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 2px; cursor: pointer; font-weight: 600; width: 100%; border-radius: 4px; }
+    .btn-danger-text { background: none; border: none; color: #999; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; margin-top: 10px; padding: 10px; }
+    .legal-link { color: var(--gold); text-decoration: underline; cursor: pointer; }
+
+    /* EXTRAS UI */
+    .pax-selector { display: flex; justify-content: center; align-items: center; gap: 30px; margin: 30px 0; }
+    .btn-circle { width: 55px; height: 55px; border-radius: 50%; border: 1px solid #ddd; background: transparent; font-size: 1.4rem; cursor: pointer; display: flex; align-items: center; justify-content: center; touch-action: manipulation; }
+    .pax-display { font-family: var(--font-display); font-size: 3.5rem; color: var(--black); min-width: 60px; text-align: center; line-height: 1; }
+    .overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255, 255, 255, 0.96); z-index: 100; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; pointer-events: none; transition: opacity 0.4s ease; }
+    .overlay.show { opacity: 1; pointer-events: all; }
+    .loader-spinner { width: 50px; height: 50px; border: 2px solid #f0f0f0; border-top-color: var(--gold); border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { 100% { transform: rotate(360deg); } }
+    
+    .modal-box { width: 85%; text-align: center; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); border: 1px solid #eee; }
+    .modal-title { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 15px; color: var(--black); }
+    .modal-text { font-size: 0.85rem; color: #666; margin-bottom: 25px; line-height: 1.6; text-align: left; max-height: 60vh; overflow-y: auto; }
+    
+    .custom-select { appearance: none; -webkit-appearance: none; background: transparent; cursor: pointer; border-radius: 0; }
+    .legal-text { font-size: 0.65rem; color: #999; text-align: center; margin-top: 15px; line-height: 1.4; padding: 0 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- LOADER -->
+    <div id="loader" class="overlay">
+      <div class="loader-spinner"></div>
+      <p id="loader-text" style="margin-top:20px; font-size:0.75rem; letter-spacing:2px; text-transform:uppercase; color:#666;">Cargando...</p>
+    </div>
+
+    <!-- MODAL CANCELAR -->
+    <div id="modal-cancel" class="overlay">
+      <div class="modal-box">
+        <div class="modal-title" style="color:#a83232;">¿Cancelar Reserva?</div>
+        <div class="modal-text" style="text-align:center;">Esta acción eliminará su cita permanentemente.</div>
+        <div style="display:flex;gap:10px;justify-content:center;">
+          <button class="btn-outline" style="padding:12px;font-size:0.75rem;" onclick="closeModal()">Volver</button>
+          <button class="btn-gold" style="padding:12px;font-size:0.75rem;background:#a83232;" onclick="confirmCancel()">Sí, Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL TRATAMIENTO DE DATOS -->
+    <div id="modal-privacy" class="overlay">
+      <div class="modal-box">
+        <div class="modal-title">Tratamiento de Datos</div>
+        <div class="modal-text">
+          <p>En cumplimiento de la Ley de Protección de Datos Personales, le informamos que sus datos serán tratados de manera confidencial y utilizados exclusivamente para la gestión de su reserva y comunicación relacionada con nuestros servicios.</p>
+          <p>Usted tiene derecho a conocer, actualizar y rectificar su información. Al confirmar esta reserva, acepta nuestra política de privacidad.</p>
+        </div>
+        <button class="btn-gold" style="width:100%;" onclick="closePrivacy()">Entendido</button>
+      </div>
+    </div>
+
+    <header>
+      <h1 class="brand">Palo de Mango</h1>
+      <div class="subtitle">Concierge & Reservations</div>
+    </header>
+
+    <!-- BARRA DE RESUMEN PERSISTENTE -->
+    <div id="summary-bar" class="summary-bar">
+      <!-- Se llena dinámicamente -->
+    </div>
+
+    <div class="wizard-content">
+
+      <!-- PASO 1: PERSONAS -->
+      <div id="step-1" class="step active">
+        <h2 class="step-title">Número de Invitados</h2>
+        <div class="pax-selector">
+          <button class="btn-circle" onclick="updatePax(-1)"><i class="fas fa-minus"></i></button>
+          <div class="pax-display" id="pax-value">2</div>
+          <button class="btn-circle" onclick="updatePax(1)"><i class="fas fa-plus"></i></button>
+        </div>
+        <div class="nav-actions center">
+          <button class="btn-gold" onclick="goToStep(2)">Continuar</button>
+        </div>
+      </div>
+
+      <!-- PASO 2: FECHA -->
+      <div id="step-2" class="step">
+        <h2 class="step-title">Seleccione Fecha</h2>
+        <div class="input-group">
+          <input type="date" id="input-date" class="input-minimal" onchange="validateDate()">
+        </div>
+        <div class="nav-actions">
+          <button class="btn-link" onclick="goToStep(1)">Atrás</button>
+          <button id="btn-search" class="btn-gold" onclick="searchHours()">Ver Horarios</button>
+        </div>
+      </div>
+
+      <!-- PASO 3: HORA -->
+      <div id="step-3" class="step">
+        <h2 class="step-title">Horario Disponible</h2>
+        <div id="hours-container" class="time-grid"></div>
+        <div class="nav-actions">
+          <button class="btn-link" onclick="goToStep(2)">Atrás</button>
+          <button id="btn-confirm-hour" class="btn-gold" onclick="goToStep(4)" disabled>Continuar</button>
+        </div>
+      </div>
+
+      <!-- PASO 4: DATOS PERSONALES -->
+      <div id="step-4" class="step">
+        <h2 class="step-title">Sus Datos</h2>
+        
+        <div class="input-group"><input type="text" id="input-name" class="input-minimal" placeholder="Nombre"></div>
+        <div class="input-group"><input type="text" id="input-lastname" class="input-minimal" placeholder="Apellido"></div>
+        <div class="input-group"><input type="email" id="input-email" class="input-minimal" placeholder="Correo electrónico"></div>
+        
+        <div class="input-group">
+          <div class="phone-group">
+            <input type="text" id="input-country-code" class="country-input" value="+57">
+            <input type="tel" id="input-phone" class="input-minimal" placeholder="Número celular" maxlength="10" oninput="this.value = this.value.replace(/[^0-9]/g, '');">
+          </div>
+        </div>
+        
+        <div class="ios-picker-wrapper">
+          <div class="picker-header">
+            <span class="picker-label">Fecha de Cumpleaños</span>
+            <label class="switch">
+              <input type="checkbox" id="birthday-toggle" onchange="toggleBirthday()">
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div id="ios-picker" class="picker-wheel-container">
+            <div class="picker-highlight"></div>
+            <div class="picker-col" id="col-day"><div class="picker-pad"></div><div class="picker-pad"></div></div>
+            <div class="picker-col" id="col-month"><div class="picker-pad"></div><div class="picker-pad"></div></div>
+            <div class="picker-col" id="col-year"><div class="picker-pad"></div><div class="picker-pad"></div></div>
+          </div>
+        </div>
+        
+        <div class="nav-actions">
+          <button class="btn-link" onclick="goToStep(3)">Atrás</button>
+          <button class="btn-gold" onclick="goToStep(5)">Continuar</button>
+        </div>
+      </div>
+
+      <!-- PASO 5: PERSONALIZACIÓN & CONSENTIMIENTO -->
+      <div id="step-5" class="step">
+        <h2 class="step-title">Personaliza tu Reserva</h2>
+        
+        <div class="input-group">
+          <label class="picker-label" style="display:block;margin-bottom:5px;">Ocasión (Opcional)</label>
+          <select id="input-occasion" class="input-minimal custom-select">
+            <option value="">Seleccionar...</option>
+            <option value="Cumpleaños">Cumpleaños</option>
+            <option value="Aniversario">Aniversario</option>
+            <option value="Cita Romántica">Cita Romántica</option>
+            <option value="Negocios">Negocios</option>
+            <option value="Reunión Familiar">Reunión Familiar</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="picker-label" style="display:block;margin-bottom:5px;">Restricciones (Opcional)</label>
+          <select id="input-restrictions" class="input-minimal custom-select">
+            <option value="">Ninguna</option>
+            <option value="Alergias">Tengo Alergias</option>
+            <option value="Vegetariano">Soy Vegetariano</option>
+            <option value="Vegano">Soy Vegano</option>
+            <option value="Sin Gluten">Sin Gluten</option>
+          </select>
+        </div>
+        <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+           <div class="input-group" style="flex:1;">
+             <label class="picker-label" style="display:block;margin-bottom:5px;">¿Mascotas?</label>
+             <select id="input-pets" class="input-minimal custom-select"><option value="No">No</option><option value="Si">Sí</option></select>
+           </div>
+           <div class="input-group" style="flex:1;">
+             <label class="picker-label" style="display:block;margin-bottom:5px;">¿Niños?</label>
+             <select id="input-kids" class="input-minimal custom-select"><option value="No">No</option><option value="Si">Sí</option></select>
+           </div>
+        </div>
+        <div class="input-group">
+          <textarea id="input-comments" class="input-minimal" placeholder="Comentarios o preferencias (Opcional)" rows="2"></textarea>
+        </div>
+
+        <div class="consent-container">
+          <input type="checkbox" id="contact-consent" class="consent-checkbox">
+          <label for="contact-consent" class="consent-text">
+            Acepto ser contactado al número o correo indicados para recibir información relacionada con mi reserva.
+          </label>
+        </div>
+
+        <div class="nav-actions column">
+          <button class="btn-gold" style="width:100%" onclick="finalizeBooking()">Confirmar Reserva</button>
+          <p class="legal-text">
+            Al confirmar, acepta nuestra política de <a class="legal-link" onclick="openPrivacy()">Tratamiento de datos</a>.
+          </p>
+          <button class="btn-link" style="margin-top:0;" onclick="goToStep(4)">Atrás</button>
+        </div>
+      </div>
+
+      <!-- PASO 6: ÉXITO -->
+      <div id="step-success" class="step">
+        <div style="text-align: center; margin-bottom: 15px;">
+          <i class="fas fa-check-circle" style="font-size: 3rem; color: var(--gold);"></i>
+        </div>
+        <h2 class="step-title" style="margin-bottom: 15px;">Reserva Confirmada</h2>
+        
+        <div style="text-align:center;margin-bottom:20px;">
+          <span style="display:block;font-size:1.1rem;color:#0a0a0a;margin:5px 0; text-transform: capitalize;" id="res-date">--</span>
+          <span style="display:block;font-size:1.1rem;color:#0a0a0a;margin:5px 0;" id="res-time">--</span>
+          <span style="display:block;font-size:1.1rem;color:#0a0a0a;margin:5px 0;" id="res-pax">--</span>
+        </div>
+
+        <div class="action-icons-grid">
+          <!-- Link al Menú -->
+          <a href="INSERTAR_URL_MENU_AQUI" class="action-icon-item" target="_blank">
+            <div class="icon-circle"><i class="fas fa-utensils"></i></div>
+            <span class="icon-label">Ver Menú</span>
+          </a>
+          <!-- Link a Maps -->
+          <a href="https://maps.app.goo.gl/HXKmJiUPqy2UYkPKA" class="action-icon-item" target="_blank">
+            <div class="icon-circle"><i class="fas fa-map-marker-alt"></i></div>
+            <span class="icon-label">Cómo Llegar</span>
+          </a>
+          <!-- Link a WhatsApp -->
+          <a href="https://wa.me/573000000000" class="action-icon-item" target="_blank">
+            <div class="icon-circle"><i class="fab fa-whatsapp"></i></div>
+            <span class="icon-label">Chat</span>
+          </a>
+        </div>
+
+        <div class="success-info-block">
+          <span class="info-title">Información Importante</span>
+          <p class="info-text">• El tiempo de espera máximo es de <strong>15 minutos</strong>. Pasado este tiempo, la mesa podrá ser liberada.</p>
+          <p class="info-text" style="margin-top:10px;">
+            Si tienes alguna inquietud, comunícate con nosotros por WhatsApp al 
+            <a href="https://wa.me/573000000000" class="whatsapp-link" target="_blank">+57 300 000 0000</a>.
+          </p>
+        </div>
+        
+        <div class="nav-actions column">
+          <button class="btn-outline" onclick="modifyBooking()">Modificar Reserva</button>
+          <button class="btn-danger-text" onclick="askCancel()">Cancelar Reserva</button>
+        </div>
+      </div>
+
+      <!-- PASO 7: CANCELADO (LIMPIO) -->
+      <div id="step-cancelled" class="step">
+        <div style="text-align: center; margin-bottom: 30px; margin-top: 40px;">
+          <i class="fas fa-times-circle" style="font-size: 3rem; color: #ccc;"></i>
+        </div>
+        <h2 class="step-title">Reserva Cancelada</h2>
+        <p style="text-align:center;font-size:0.95rem;color:#666;line-height:1.6;">Su cita ha sido eliminada del sistema correctamente.<br>Ha recibido un correo de confirmación.</p>
+        <div class="nav-actions center" style="margin-top:40px;">
+          <button class="btn-gold" onclick="resetAll()">Nueva Reserva</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    // ESTADO
+    const appState = { pax: 2, date: null, time: null, name: '', lastname: '', email: '', phoneCode: '+57', phone: '', birthday: null, reservationId: null, consent: false };
+
+    // --- FORMATEAR FECHA (LARGA ESPAÑOL) ---
+    function formatDateLong(dateStr) {
+      if (!dateStr) return '';
+      // Crear fecha segura usando partes para evitar problemas de zona horaria
+      const parts = dateStr.split('-');
+      const date = new Date(parts[0], parts[1] - 1, parts[2]);
+      
+      const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+      return date.toLocaleDateString('es-ES', options);
+    }
+
+    // --- BARRA RESUMEN ---
+    function updateSummary() {
+      const bar = document.getElementById('summary-bar');
+      let html = '';
+      html += `<div class="summary-item"><i class="fas fa-user-friends"></i> ${appState.pax}</div>`;
+      if (appState.date) html += `<div class="summary-item"><i class="far fa-calendar"></i> ${appState.date}</div>`;
+      if (appState.time) html += `<div class="summary-item"><i class="far fa-clock"></i> ${appState.time}</div>`;
+      bar.innerHTML = html;
+      
+      const activeStep = document.querySelector('.step.active');
+      // Mostrar solo si NO estamos en paso 1, NO en cancelado Y NO EN ÉXITO
+      if (activeStep && activeStep.id !== 'step-1' && activeStep.id !== 'step-cancelled' && activeStep.id !== 'step-success') {
+        bar.classList.add('visible');
+      } else {
+        bar.classList.remove('visible');
+      }
+    }
+
+    // --- PICKER IPHONE ---
+    function initBirthdayPicker() {
+      const colDay = document.getElementById('col-day');
+      const colMonth = document.getElementById('col-month');
+      const colYear = document.getElementById('col-year');
+      
+      const pad = '<div class="picker-pad"></div>';
+      
+      let daysHtml = pad;
+      for(let i=1; i<=31; i++) daysHtml += `<div class="picker-item" data-val="${i}">${i}</div>`;
+      daysHtml += pad;
+      colDay.innerHTML = daysHtml;
+      
+      const months = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      let monthsHtml = pad;
+      months.forEach((m, i) => monthsHtml += `<div class="picker-item" data-val="${i+1}">${m}</div>`);
+      monthsHtml += pad;
+      colMonth.innerHTML = monthsHtml;
+      
+      let yearsHtml = pad;
+      const currentYear = new Date().getFullYear();
+      for(let i=currentYear; i>=1930; i--) yearsHtml += `<div class="picker-item" data-val="${i}">${i}</div>`;
+      yearsHtml += pad;
+      colYear.innerHTML = yearsHtml;
+
+      setTimeout(() => {
+        colDay.scrollTop = 0; colMonth.scrollTop = 0; colYear.scrollTop = 40 * (currentYear - 1990);
+      }, 100);
+    }
+    
+    function toggleBirthday() {
+      const isChecked = document.getElementById('birthday-toggle').checked;
+      const container = document.getElementById('ios-picker');
+      if (isChecked) container.classList.add('open');
+      else container.classList.remove('open');
+    }
+    
+    function getPickerValue() {
+      if (!document.getElementById('birthday-toggle').checked) return null;
+      const itemHeight = 40; 
+      const getVal = (colId) => {
+        const col = document.getElementById(colId);
+        const index = Math.round(col.scrollTop / itemHeight);
+        const items = col.querySelectorAll('.picker-item');
+        if (items[index]) return items[index].getAttribute('data-val');
+        return null;
+      };
+      const d = getVal('col-day') || '1';
+      const m = getVal('col-month') || '1';
+      const y = getVal('col-year') || '2000';
+      return `${y}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`;
+    }
+
+    initBirthdayPicker();
+
+    // --- VALIDACIONES ---
+    const countryInput = document.getElementById('input-country-code');
+    countryInput.addEventListener('input', function(e) {
+      let val = e.target.value;
+      if (!val.startsWith('+')) val = '+' + val.replace(/\+/g, '');
+      if (!/^\+\d*$/.test(val)) val = '+' + val.replace(/[^\d]/g, '');
+      e.target.value = val;
+    });
+
+    function initCalendar() {
+      const today = new Date().toISOString().split('T')[0];
+      const dateInput = document.getElementById('input-date');
+      dateInput.setAttribute('min', today);
+      dateInput.value = today; 
+      appState.date = today;
+      document.getElementById('btn-search').disabled = false;
+    }
+    initCalendar();
+
+    function goToStep(stepNumber) {
+      if (stepNumber === 5) {
+         const name = document.getElementById('input-name').value.trim();
+         const lastname = document.getElementById('input-lastname').value.trim();
+         const email = document.getElementById('input-email').value.trim();
+         const phone = document.getElementById('input-phone').value.trim();
+         const phoneCode = document.getElementById('input-country-code').value.trim();
+         const bday = getPickerValue(); 
+
+         if(!name || !lastname || !email || !phone) { alert("Por favor complete nombre, apellido, correo y celular."); return; }
+         if(name.length < 2 || lastname.length < 2) { alert("Nombre/Apellido muy cortos."); return; }
+         if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { alert("Correo inválido."); return; }
+         if(phoneCode.length < 2 || !phoneCode.startsWith('+')) { alert("Indicativo inválido."); return; }
+         if(phone.replace(/\D/g,'').length !== 10) { alert("El celular debe tener 10 dígitos."); return; }
+
+         appState.name = name; appState.lastname = lastname; appState.email = email;
+         appState.phone = phone.replace(/\D/g,''); appState.phoneCode = phoneCode;
+         appState.birthday = bday; 
+      }
+
+      document.querySelectorAll('.step').forEach(el => el.classList.remove('active'));
+      setTimeout(() => {
+        const target = stepNumber === 'success' ? 'step-success' : stepNumber === 'cancelled' ? 'step-cancelled' : `step-${stepNumber}`;
+        document.getElementById(target).classList.add('active');
+        document.querySelector('.wizard-content').scrollTop = 0;
+        updateSummary();
+      }, 50);
+    }
+
+    // --- LÓGICA DE NEGOCIO ---
+    function updatePax(d) { let n = appState.pax + d; if(n>=1 && n<=12) { appState.pax = n; document.getElementById('pax-value').innerText = n; } }
+    
+    function validateDate() { const v = document.getElementById('input-date').value; appState.date = v; document.getElementById('btn-search').disabled = !v; }
+    
+    function searchHours() {
+      showLoader('Buscando...');
+      mockServerCall('getSlots', {date:appState.date}, (res) => { hideLoader(); renderSlots(res); goToStep(3); });
+    }
+    function renderSlots(s) {
+      const c = document.getElementById('hours-container'); c.innerHTML=''; 
+      document.getElementById('btn-confirm-hour').disabled=true;
+      if(s.length===0) c.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:20px;color:#666;">No hay disponibilidad.</div>';
+      else {
+        s.forEach(t => {
+          const e = document.createElement('div'); e.className='time-slot'; e.innerText=t;
+          e.onclick=() => { appState.time=t; document.querySelectorAll('.time-slot').forEach(el=>el.classList.remove('selected')); e.classList.add('selected'); document.getElementById('btn-confirm-hour').disabled=false; };
+          c.appendChild(e);
+        });
+      }
+    }
+    function finalizeBooking() {
+      const occasion = document.getElementById('input-occasion').value;
+      const restrictions = document.getElementById('input-restrictions').value;
+      const pets = document.getElementById('input-pets').value;
+      const kids = document.getElementById('input-kids').value;
+      const comments = document.getElementById('input-comments').value;
+      appState.consent = document.getElementById('contact-consent').checked;
+
+      const payload = { ...appState, occasion, restrictions, pets, kids, comments };
+      const action = appState.reservationId ? 'updateBooking' : 'createBooking';
+      showLoader('Confirmando...');
+      mockServerCall(action, payload, (res) => {
+        hideLoader();
+        if(res.success) {
+          appState.reservationId = res.newId;
+          
+          // MOSTRAR DATOS EN PANTALLA FINAL (Formato largo para fecha)
+          document.getElementById('res-date').innerText = formatDateLong(appState.date);
+          document.getElementById('res-time').innerText = appState.time;
+          document.getElementById('res-pax').innerText = appState.pax + " Personas";
+          
+          goToStep('success');
+        }
+      });
+    }
+    
+    function modifyBooking() { goToStep(1); }
+    
+    function askCancel() { document.getElementById('modal-cancel').classList.add('show'); }
+    function closeModal() { document.getElementById('modal-cancel').classList.remove('show'); }
+    function confirmCancel() {
+      closeModal(); showLoader('Cancelando...');
+      mockServerCall('cancelBooking', {id:appState.reservationId}, (res) => { 
+        hideLoader(); 
+        appState.reservationId=null; 
+        goToStep('cancelled'); 
+      });
+    }
+    
+    function openPrivacy() { document.getElementById('modal-privacy').classList.add('show'); }
+    function closePrivacy() { document.getElementById('modal-privacy').classList.remove('show'); }
+
+    // REINICIO COMPLETO
+    function resetAll() { location.reload(); }
+
+    function showLoader(t) { document.getElementById('loader-text').innerText=t; document.getElementById('loader').classList.add('show'); }
+    function hideLoader() { document.getElementById('loader').classList.remove('show'); }
+
+    // SIMULADOR
+    const isLocal = typeof google === 'undefined';
+    function mockServerCall(a, d, cb) {
+      if(isLocal) {
+        setTimeout(() => {
+          let r = {success:true};
+          if(a==='getSlots') { r=[]; for(let h=8;h<=20;h++) { let hh=h<10?'0'+h:h; r.push(hh+':00'); if(h<20)r.push(hh+':30'); } }
+          else if(a==='createBooking'||a==='updateBooking') r={success:true, newId:'ID-'+Date.now()};
+          cb(r);
+        }, 800);
+      } else { google.script.run.withSuccessHandler(cb).withFailureHandler(alert)[a](d); }
+    }
+  </script>
+</body>
+</html>
